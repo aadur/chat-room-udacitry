@@ -1,29 +1,30 @@
 package edu.udacity.java.nao;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
-import java.net.InetAddress;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.MockitoAnnotations;
+import org.mockito.MockitoSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import org.springframework.web.servlet.ModelAndView;
 
 import edu.udacity.java.nano.WebSocketChatApplication;
+import edu.udacity.java.nano.chat.WebSocketChatServer;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = WebSocketChatApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -31,15 +32,25 @@ public class WebSocketChatApplicationTest {
 
 	@Autowired
 	private WebApplicationContext webApplicationContext;
+	
+	@MockBean
+	private WebSocketChatServer webSocketChatServer;
 
 	private MockMvc mockMvc;
+
+	@LocalServerPort
+	private int port;
+	
+	@Autowired
+	private TestRestTemplate restTemplate;
 	
 	@Before
 	public void setUp() {
 		MockitoAnnotations.initMocks(this);
 		mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
 	}
-
+	
+	
 	/**
 	 * Application context test case.
 	 */
@@ -54,7 +65,7 @@ public class WebSocketChatApplicationTest {
 	@Test
 	public void loginTest() throws Exception {
 
-		mockMvc.perform(get("/")).andExpect(status().isOk());
+		mockMvc.perform(get("/")).andExpect(status().isOk()).andExpect(view().name("login"));
 
 	}
 
@@ -76,7 +87,7 @@ public class WebSocketChatApplicationTest {
 	@Test
 	public void indexTest() throws Exception {
 
-		mockMvc.perform(get("/index")).andExpect(status().isOk());
+		mockMvc.perform(get("/index")).andExpect(status().isOk()).andExpect(view().name("chat"));
 	}
 
 	/**
@@ -88,5 +99,24 @@ public class WebSocketChatApplicationTest {
 
 		mockMvc.perform(get("/indexes")).andExpect(status().isNotFound());
 	}
-
+	
+	/**
+	 * login controller second test.
+	 */
+	@Test
+	public void loginSecondTest() {
+		 assertThat(this.restTemplate.getForObject("http://localhost:" + port + "/",
+	                String.class)).contains("login");
+		
+	}
+	
+	/**
+	 * chat controller second test.
+	 */
+	@Test
+	public void chatSecondTest() {
+		 assertThat(this.restTemplate.getForObject("http://localhost:" + port + "/index",
+	                String.class)).contains("chat");
+		
+	}	
 }
